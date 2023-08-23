@@ -70,7 +70,7 @@ def index():
         # print(user_info)
         # print('\n\n\n\n')
         user_name=user_info['login']
-        token=session['google_token']
+        token=session['github_token']
         return render_template('index.html', user_name=user_name,datetoday2=datetoday2,token=token)
 
 def validate_token(token):
