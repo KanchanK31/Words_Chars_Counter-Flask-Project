@@ -1,11 +1,10 @@
-import os
-from flask import redirect,session,url_for,request
-from flask_smorest import Blueprint
+from flask import session,redirect,url_for,request
+from flask import Blueprint
+from flask import current_app
 from flask_oauthlib.client import OAuth
-
-from __main__ import app
-github_blp = Blueprint("github", __name__, description="Operations related to github login")
-
+import os
+github_login_bpr = Blueprint('b3', __name__)
+app=current_app
 oauth = OAuth(app)
 github = oauth.remote_app(
     'github',
@@ -19,11 +18,12 @@ github = oauth.remote_app(
     authorize_url='https://github.com/login/oauth/authorize',
 )
 
-@github_blp.route('/login/github')
+@github_login_bpr.route('/login/github')
 def login_github():
-    return github.authorize(callback=url_for('authorized_git', _external=True))
+    return github.authorize(callback=url_for('b3.authorized_git', _external=True))
 
-@github_blp.route('/login/github/authorize')
+
+@github_login_bpr.route('/login/github/authorize')
 def authorized_git():
     response = github.authorized_response()
     if response is None or response.get('access_token') is None:
@@ -43,4 +43,8 @@ def authorized_git():
     #     'email': user_data.get('email')
     # }
     
-    return redirect(url_for('index'))
+    return redirect(url_for('b4.index'))
+
+@github.tokengetter
+def get_github_oauth_token():
+    return session.get('github_token')

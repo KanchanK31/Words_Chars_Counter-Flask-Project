@@ -1,11 +1,10 @@
-import os
-from flask import redirect,session,url_for,request
-from flask_smorest import Blueprint
+from flask import render_template,session,redirect,url_for,request
+from flask import Blueprint
+from flask import current_app
 from flask_oauthlib.client import OAuth
-
-from __main__ import app
-google_blp = Blueprint("google", __name__, description="Operations related to google login")
-
+import os
+google_login_bpr = Blueprint('b2', __name__)
+app=current_app
 oauth = OAuth(app)
 google = oauth.remote_app(
     'google',
@@ -22,12 +21,11 @@ google = oauth.remote_app(
     
 )
 
-@google_blp.route('/login/google')
+@google_login_bpr.route('/login/google')
 def login_google():
-    return google.authorize(callback=url_for('authorized', _external=True))
+    return google.authorize(callback=url_for('b2.authorized', _external=True))
 
-
-@google_blp.route('/login/google/authorize')
+@google_login_bpr.route('/login/google/authorize')
 def authorized():
     response = google.authorized_response()
     if response is None or response.get('access_token') is None:
@@ -40,6 +38,8 @@ def authorized():
     print("******************")
     session['google_token'] = response['access_token']
    
-    return redirect(url_for('index'))
+    return redirect(url_for('b4.index'))
 
-
+@google.tokengetter
+def get_google_oauth_token():
+   return session.get('google_token')
