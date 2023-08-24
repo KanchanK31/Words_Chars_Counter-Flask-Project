@@ -1,13 +1,15 @@
 import os
+from dotenv import load_dotenv
 import requests
 from functools import wraps
 from flask import Flask, redirect, render_template, session, url_for,request,jsonify
 from flask_oauthlib.client import OAuth
-#from authlib.integrations.flask_client import OAuth 
 from datetime import date
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Replace with your actual secret key
+app.secret_key = os.urandom(24)  
 
 datetoday = date.today().strftime("%m_%d_%y")
 datetoday2 = date.today().strftime("%d-%B-%Y")
@@ -20,8 +22,8 @@ def replace_multiple_newlines(text):
 oauth = OAuth(app)
 google = oauth.remote_app(
     'google',
-    consumer_key='311254232840-on64sfnlod5lo60hjc1h1mni3152akol.apps.googleusercontent.com',
-    consumer_secret='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',
+    consumer_key=os.getenv('GOOGLE_CONSUMER_KEY'),
+    consumer_secret=os.getenv('GOOGLE_CONSUMER_SECRET'),
     request_token_params={
         'scope': 'email',
     },
@@ -32,10 +34,11 @@ google = oauth.remote_app(
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     
 )
+
 github = oauth.remote_app(
     'github',
-    consumer_key='13cac2150e5a4b00ab94',
-    consumer_secret='0049d85fddc0ae6e6b47bd33f8d27bf5a5e0446b',
+    consumer_key=os.getenv('GITHUB_CONSUMER_KEY'),
+    consumer_secret=os.getenv('GITHUB_CONSUMER_SECRET'),
     request_token_params={'scope': 'user:email'},  # You can modify scopes as needed
     base_url='https://api.github.com/',
     request_token_url=None,
@@ -62,7 +65,8 @@ def index():
         user_email= user_info.data['email']
         user_name=user_email.split('@')[0]
 
-        token=session['google_token']
+        # token=session['google_token']
+        token=get_google_oauth_token()
         return render_template('index.html', user_name=user_name,datetoday2=datetoday2,token=token)
     if 'github_token' in session:
         user_info=github.get('user').data
@@ -70,18 +74,25 @@ def index():
         # print(user_info)
         # print('\n\n\n\n')
         user_name=user_info['login']
-        token=session['github_token']
+        token=get_github_oauth_token()
         return render_template('index.html', user_name=user_name,datetoday2=datetoday2,token=token)
 
 def validate_token(token):
-    introspection_url = "https://oauth2.googleapis.com/tokeninfo"
-    params = {"access_token": token}
+    google_introspection_url = "https://oauth2.googleapis.com/tokeninfo"
+    google_params = {"access_token": token}
 
-    response = requests.get(introspection_url, params=params)
 
-    if response.status_code == 200:
-        token_info = response.json()
-        if token_info.get("aud") == "311254232840-on64sfnlod5lo60hjc1h1mni3152akol.apps.googleusercontent.com":
+    github_introspection_url = "https://api.github.com/user"
+    github_headers = {"Authorization": f"Bearer {token}"}
+
+    
+    # response = requests.get(introspection_url, params=params)
+    google_response = requests.get(google_introspection_url, params=google_params)
+    github_response = requests.get(github_introspection_url, headers=github_headers)
+
+    if google_response.status_code == 200:
+        token_info = google_response.json()
+        if token_info.get("aud") == os.getenv('GOOGLE_CONSUMER_KEY'):
             # Replace 'YOUR_CLIENT_ID' with your actual Google OAuth client ID
             if not token_info.get("error"):
                 # Check if the token is not expired
@@ -89,7 +100,11 @@ def validate_token(token):
                     expires_in = int(token_info["expires_in"])
                     if expires_in > 0:
                         return True
-        return False
+    elif github_response.status_code == 200:
+        github_info = github_response.json()
+        if "login" in github_info:
+            return True
+    
     else:
         return False
     
@@ -121,7 +136,7 @@ def requires_valid_token(view_func):
 # Here we'll ask google whether this given token is valid and is not expired and its client id is same as this App
 
 
-@app.route('/count',methods=['GET','POST'])
+@app.route('/count',methods=['POST'])
 @requires_valid_token
 def count():
     try:
@@ -202,7 +217,9 @@ def authorized_git():
         )
 
     session['github_token'] = response['access_token']
-
+    print("******************")
+    print(response.get('access_token'))
+    print("******************")
     user_data = github.get('user').data
     # session['github_user'] = {
     #     'login': user_data.get('login'),
