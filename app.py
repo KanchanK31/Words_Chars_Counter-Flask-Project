@@ -3,12 +3,16 @@ from dotenv import load_dotenv
 import requests
 from functools import wraps
 from flask import Flask, redirect, render_template, session, url_for,request,jsonify
+from resources.login_logout import blp
+from resources.google_login import google_blp,google
+from resources.github_login import github_blp,github
 from flask_oauthlib.client import OAuth
 from datetime import date
 
 load_dotenv()
 
 app = Flask(__name__)
+app.register_blueprint(blp)
 app.secret_key = os.urandom(24)  
 
 datetoday = date.today().strftime("%m_%d_%y")
@@ -20,32 +24,32 @@ def replace_multiple_newlines(text):
     return len(lines)
 
 oauth = OAuth(app)
-google = oauth.remote_app(
-    'google',
-    consumer_key=os.getenv('GOOGLE_CONSUMER_KEY'),
-    consumer_secret=os.getenv('GOOGLE_CONSUMER_SECRET'),
-    request_token_params={
-        'scope': 'email',
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
+# google = oauth.remote_app(
+#     'google',
+#     consumer_key=os.getenv('GOOGLE_CONSUMER_KEY'),
+#     consumer_secret=os.getenv('GOOGLE_CONSUMER_SECRET'),
+#     request_token_params={
+#         'scope': 'email',
+#     },
+#     base_url='https://www.googleapis.com/oauth2/v1/',
+#     request_token_url=None,
+#     access_token_method='POST',
+#     access_token_url='https://accounts.google.com/o/oauth2/token',
+#     authorize_url='https://accounts.google.com/o/oauth2/auth',
     
-)
+# )
 
-github = oauth.remote_app(
-    'github',
-    consumer_key=os.getenv('GITHUB_CONSUMER_KEY'),
-    consumer_secret=os.getenv('GITHUB_CONSUMER_SECRET'),
-    request_token_params={'scope': 'user:email'},  # You can modify scopes as needed
-    base_url='https://api.github.com/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://github.com/login/oauth/access_token',
-    authorize_url='https://github.com/login/oauth/authorize',
-)
+# github = oauth.remote_app(
+#     'github',
+#     consumer_key=os.getenv('GITHUB_CONSUMER_KEY'),
+#     consumer_secret=os.getenv('GITHUB_CONSUMER_SECRET'),
+#     request_token_params={'scope': 'user:email'},  # You can modify scopes as needed
+#     base_url='https://api.github.com/',
+#     request_token_url=None,
+#     access_token_method='POST',
+#     access_token_url='https://github.com/login/oauth/access_token',
+#     authorize_url='https://github.com/login/oauth/authorize',
+# )
 
 def login_required(view_func):
     @wraps(view_func)
@@ -166,68 +170,68 @@ def count():
         error_message = "An error occurred: " + str(e)
         return error_message
 
-@app.route('/login')
-def public_index():
-    return render_template('login.html')
+# @app.route('/login')
+# def public_index():
+#     return render_template('login.html')
 
 
-@app.route('/login/google')
-def login_google():
-    return google.authorize(callback=url_for('authorized', _external=True))
+# @app.route('/login/google')
+# def login_google():
+#     return google.authorize(callback=url_for('authorized', _external=True))
 
-@app.route('/login/github')
-def login_github():
-    return github.authorize(callback=url_for('authorized_git', _external=True))
+# @app.route('/login/github')
+# def login_github():
+#     return github.authorize(callback=url_for('authorized_git', _external=True))
 
 # Function to create GitHub OAuth session
 
 
 
-@app.route('/logout')
-def logout():
-    if 'google_token' in session:
-        session.pop('google_token', None)
-    if 'github_token' in session:
-        session.pop('github_token', None)
-    return redirect(url_for('public_index'))
+# @app.route('/logout')
+# def logout():
+#     if 'google_token' in session:
+#         session.pop('google_token', None)
+#     if 'github_token' in session:
+#         session.pop('github_token', None)
+#     return redirect(url_for('public_index'))
 
 
-@app.route('/login/google/authorize')
-def authorized():
-    response = google.authorized_response()
-    if response is None or response.get('access_token') is None:
-        return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    print("******************")
-    print(response.get('access_token'))
-    print("******************")
-    session['google_token'] = response['access_token']
+# @app.route('/login/google/authorize')
+# def authorized():
+#     response = google.authorized_response()
+#     if response is None or response.get('access_token') is None:
+#         return 'Access denied: reason={} error={}'.format(
+#             request.args['error_reason'],
+#             request.args['error_description']
+#         )
+#     print("******************")
+#     print(response.get('access_token'))
+#     print("******************")
+#     session['google_token'] = response['access_token']
    
-    return redirect(url_for('index'))
+#     return redirect(url_for('index'))
 
-@app.route('/login/github/authorize')
-def authorized_git():
-    response = github.authorized_response()
-    if response is None or response.get('access_token') is None:
-        return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
+# @app.route('/login/github/authorize')
+# def authorized_git():
+#     response = github.authorized_response()
+#     if response is None or response.get('access_token') is None:
+#         return 'Access denied: reason={} error={}'.format(
+#             request.args['error_reason'],
+#             request.args['error_description']
+#         )
 
-    session['github_token'] = response['access_token']
-    print("******************")
-    print(response.get('access_token'))
-    print("******************")
-    user_data = github.get('user').data
-    # session['github_user'] = {
-    #     'login': user_data.get('login'),
-    #     'name': user_data.get('name'),
-    #     'email': user_data.get('email')
-    # }
+#     session['github_token'] = response['access_token']
+#     print("******************")
+#     print(response.get('access_token'))
+#     print("******************")
+#     user_data = github.get('user').data
+#     # session['github_user'] = {
+#     #     'login': user_data.get('login'),
+#     #     'name': user_data.get('name'),
+#     #     'email': user_data.get('email')
+#     # }
     
-    return redirect(url_for('index'))
+#     return redirect(url_for('index'))
 
 
 @github.tokengetter
