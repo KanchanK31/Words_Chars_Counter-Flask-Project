@@ -1,8 +1,11 @@
 from flask import session,redirect,url_for,request
 from flask import Blueprint
 from flask import current_app
+from dotenv import load_dotenv
 from flask_oauthlib.client import OAuth
 import os
+load_dotenv()
+
 github_login_bpr = Blueprint('b3', __name__)
 app=current_app
 oauth = OAuth(app)
