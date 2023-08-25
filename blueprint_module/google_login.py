@@ -1,8 +1,10 @@
 from flask import render_template,session,redirect,url_for,request
 from flask import Blueprint
 from flask import current_app
+from dotenv import load_dotenv
 from flask_oauthlib.client import OAuth
 import os
+load_dotenv()
 google_login_bpr = Blueprint('b2', __name__)
 app=current_app
 oauth = OAuth(app)
