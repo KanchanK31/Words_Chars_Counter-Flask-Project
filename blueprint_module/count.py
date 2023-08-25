@@ -3,8 +3,10 @@ from flask import Blueprint
 from flask import current_app
 from flask_oauthlib.client import OAuth
 from functools import wraps
+from dotenv import load_dotenv
 import os
 import requests
+load_dotenv()
 count_bpr = Blueprint('b5', __name__)
 app=current_app
 oauth = OAuth(app)
